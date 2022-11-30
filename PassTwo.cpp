@@ -2,29 +2,31 @@
 
 PassTwo::PassTwo()
 {
-    //string path = f.getPath();
-
+    // prompt user to enter program file name, store in FileHandler object f
     cout << "ENTER PROGRAM FILE:\n";
-    string e = f.getPath();
+    string datPath = f.getPath();
 
-    f.readProgram(e);
-    f.expressions.symbols.inOrder();
-    f.expressions.literals.printLitTable();
-
-    string path = "sic2.int";
-    setDirectory(path);
-    readIntFile(path);
+    // complete pass one
+    f.intName = f.getIntName(datPath);          // remove the program file type extension (.dat), append ".int" to the end
+    f.readProgram(datPath);                     // complete pass one of assembly
+    f.expressions.symbols.inOrder();            // print symbol table tree using in order traversal to command line
+    f.expressions.literals.printLitTable();     // print literal table to command line
+       
+    // complete pass two
+    setDirectory(f.intName);
+    readIntFile(f.intName);
 }
 
-PassTwo::PassTwo(string path)
+PassTwo::PassTwo(string datPath)
 {
-    setDirectory(path);
+    setDirectory(datPath);
 
+    f.intName = f.getIntName(datPath);
     f.readProgram(directory + ".dat");
     f.expressions.symbols.inOrder();
     f.expressions.literals.printLitTable();
 
-    readIntFile(path);
+    readIntFile(f.intName);
 }
 
 PassTwo::~PassTwo()
@@ -45,30 +47,34 @@ void PassTwo::setDirectory(string path)
     return;
 }
 
+
 void PassTwo::readIntFile(string path)
 {
     HeadR.push_back("H^");
     EndR.push_back("E^");
-    ModR.push_back("M^");
-    RefR.push_back("R^");
-    TextR.push_back("T^");
-    DefR.push_back("D^");
 
     ifstream inFile;
+    ofstream outFileTxt, outFileObj;
     string tLine;
     string baseLoc;
     bool isEOP = false;
 
     inFile.open(path);
-    //outFile.open(directory + ".obj");
+    outFileTxt.open(directory + ".txt");
+    outFileObj.open(directory + ".obj");
 
     if(!inFile)
     {
-        cout << "ERROR: INTERMEDIATE FILE NOT FOUND." << endl;
+        cout << "ERROR: INTERMEDIATE FILE NOT FOUND. " << path << endl;
         exit(102);
     }
 
-    f.expressions.symbols.inOrder();
+    outFileTxt << setw(2) << 
+    "LINE#" << setw(5)  <<
+    "LOCCTER" << setw(15) << 
+    "LABEL" << setw(15) << 
+    "OPERATION" << setw(20) << 
+    "OPERAND" << setw(15) << "OBJECT CODE" << endl;
 
     while(getline(inFile, tLine))
     {
@@ -119,32 +125,45 @@ void PassTwo::readIntFile(string path)
         }
 
         if(p.operation == "BASE")
-            p.operand = baseLoc;
+        {
+            SymbolNode temp;
+            temp.symbol = p.operand;
+            if(f.expressions.symbols.find(temp) != nullptr)
+                baseLoc = f.expressions.symbols.find(temp)->data.hexValue;
+        }
 
     //pop back colon from label 
         if(p.label.back() == ':')
             p.label = p.label.substr(0, p.label.size()-1);
 
+        saveDefandRef(p);
+
         p.objCode = calcObjCode(p);  
         f.printProg(p);
         addToRecord(p);
 
-        //write LR line
-    
-    //write HR to obj program
-    //initialize first TR
-    
-    //while opcode != END
-
-
-    //need an expressions handler to handle the operand values: SECOND-FIRST, @RED, etc.
-
-    //determine the addressing type of the instruction
-
-
+    outFileTxt << setw(2) << setfill('0') << 
+    (p.LineNum) << "\t  " << setfill(' ') << setw(5) << setfill('0') <<
+    p.locctr  << setfill(' ') << setw(15) << 
+    p.label << setw(15) << 
+    p.operation << setw(20) << 
+    p.operand << setw(15) << f.displayObjCode(p.objCode) << endl;
+        
 
     }
     inFile.close();
+
+    outFileTxt << "Literal Table" << endl;
+    outFileTxt << setw(20) << "Name" << setw(15) << "Value" << setw(15) << "Length" << setw(15) << "Address"<< endl;
+    for(Literal tLit : f.expressions.literals.lits)
+    {
+        outFileTxt << setw(20) << tLit.name << setw(15) << tLit.opVal << setw(15) << tLit.length << setw(15) << tLit.intAddress << endl;
+    }
+    
+    
+    f.expressions.symbols.inOrderWrite(directory + ".txt");
+
+    outFileTxt.close();
 
     writeObjFile();
 
@@ -165,6 +184,7 @@ string PassTwo::firstTwoHex(ProgLine p)
     string instr = p.operation;
     string result = "";
     string tOpCode, binOp, tOpFormat;
+    
     //if theres an operand, find the opcode from the tree
 
     //populate obj code for end of int file literals
@@ -196,13 +216,17 @@ string PassTwo::firstTwoHex(ProgLine p)
         }
         else if(f.isADirective(p))
         {
-            string temp = "=" + p.operand;
             //operation is a directive, eval opcode
             if(instr == "BYTE" || instr == "WORD")
             {
-                result = f.expressions.literals.assignValue(temp);
-                return result;
+                if(p.operand.back() == '\'')
+                    result = f.expressions.literals.assignValue(p.operand);
+                else
+                    result = f.expressions.readSingleExp(p.operand);
 
+                while(result.size() < 6)
+                    result = "0" + result;
+                return result;
             }
 
             if(instr == "RESW" || instr == "RESB")
@@ -213,14 +237,16 @@ string PassTwo::firstTwoHex(ProgLine p)
 
         }
 
+        
+
         //determine if instruction is simple, immediate or indirect
 
         if(p.operand.at(0) == '@')
             tOpFormat = "2";
         else if(p.operand.at(0) == '#')
             tOpFormat = "1";
-        else if(isF4)
-            tOpFormat = "4";
+        else if(p.operand.find(",T") != string::npos || p.operand == "F")
+            tOpFormat = "0";
         else
             tOpFormat = "3";
 
@@ -266,7 +292,8 @@ string PassTwo::last4to6Hex(ProgLine p)
 
     int dLength = 3;
 
-    //if certain directive, return nothing
+    //if directive, return nothing
+
     if(f.isADirective(p))
         return "";
 
@@ -299,18 +326,24 @@ string PassTwo::last4to6Hex(ProgLine p)
     }
     else if(p.operand.find('-') != string::npos || p.operand.find('+') != string::npos || p.operand.find(',') != string::npos) //check if operand is an expression
     {   //check if operand is an expression
+        if(p.operand.find(",T") != string::npos)
+            return "45";
         opAddress = f.expressions.readSingleExp(p.operand);
         isExp = true;
     }
     else
     {   //check if operand is a symbol
+
+        if(p.operand == "F")
+            return "60";
         tSym.symbol = tOperand;
 
         if(f.expressions.symbols.find(tSym) != nullptr)
+        {
             isSym = true;
-        
-        NodePtr realSymbol = f.expressions.symbols.find(tSym);
-        opAddress = realSymbol->data.hexValue;
+            NodePtr realSymbol = f.expressions.symbols.find(tSym);
+            opAddress = realSymbol->data.hexValue;
+        }
     }
     
     if(p.operation.at(0) == '+')
@@ -328,6 +361,8 @@ string PassTwo::last4to6Hex(ProgLine p)
         adrType = "2";
     }
 
+    if(isF4)
+        dLength = 5;
     //calculate displacement based on the set operand flags
 
     if(isConst)
@@ -347,6 +382,9 @@ string PassTwo::last4to6Hex(ProgLine p)
     else if(isExp)
     {
         disp = f.subHex(f.expressions.readSingleExp(p.operand), (f.addHex(p.locctr, iFormat(p))));
+
+        while(disp.size() > dLength)
+            disp = disp.substr(1, disp.size());
     }
     else if(isSym)
     {
@@ -357,11 +395,12 @@ string PassTwo::last4to6Hex(ProgLine p)
         nextLoc = f.addHex(p.locctr, iFormat(p));
 
         disp = f.subHex(s->data.hexValue, (f.addHex(p.locctr, iFormat(p))));
+        
+        while(disp.size() > dLength)
+            disp = disp.substr(1, disp.size());
     }
-
-    if(isF4)
-        dLength = 5;
     
+
 
     while(disp.size() < dLength)
         disp = "0" + disp;
@@ -445,7 +484,11 @@ void PassTwo::saveDefandRef(ProgLine p)
         istringstream ss(values);
 
         while(getline(ss, reg, ','))
-            Extdef.push_back(reg);
+        {
+            DefStruct temp;
+            temp.name = reg;
+            DefR.push_back(temp);
+        }
     }
 
     if(p.operation == "EXTREF")
@@ -456,8 +499,175 @@ void PassTwo::saveDefandRef(ProgLine p)
         istringstream ss(values);
 
         while(getline(ss, reg, ','))
-            RefR.push_back(reg + "^");
+        {
+            RefR.push_back(reg);
+
+            ModStruct temp;
+            temp.name = reg;
+            ModR.push_back(temp);
+
+            SymbolNode newSym;
+            newSym.symbol = reg;
+            newSym.value = 0;
+            newSym.rFlag = 0;
+            newSym.iFlag = 0;
+            newSym.mFlag = 1;
+            f.expressions.symbols.insert(newSym);
+        }
     }
+}
+
+void PassTwo::checkDefandMod(ProgLine p)
+{
+    bool isExpression;
+    bool isSub, addedFront, addedBack = false;
+    int idx;
+    string first, last;
+
+
+    // determine if the operand is an expression
+    if(p.operand.find('+') != string::npos)
+    {
+        isExpression = true;
+        idx = p.operand.find('+');
+
+        first = p.operand.substr(0, idx);
+        last = p.operand.substr(idx + 1, p.operand.size());
+    }
+    else if(p.operand.find('-') != string::npos)
+    {
+        isExpression = true;
+        isSub = true;
+        idx = p.operand.find('-');
+
+        first = p.operand.substr(0, idx);
+        last = p.operand.substr(idx + 1, p.operand.size());
+    }
+
+
+    //if the operand is an expression...
+    if(isExpression)
+    {
+        for(int i = 0; i < ModR.size(); i++)
+        {
+            if(first == ModR[i].name && addedFront == false)
+            {
+                if(ModR[i].address != "")
+                {
+                    ModStruct newMod;
+
+                    newMod.name = first;
+
+                    if(p.operation == "WORD" || p.operation == "BYTE")
+                        newMod.HBLength = "06";
+                    else
+                        newMod.HBLength = "05";
+                    
+                    newMod.address = p.locctr;
+                    newMod.ModFlag = "+";
+
+                    ModR.push_back(newMod);
+                }
+                else
+                {
+                    ModR[i].address = p.locctr;
+
+                    if(p.operation == "WORD" || p.operation == "BYTE")
+                        ModR[i].HBLength = "06";
+                    else
+                        ModR[i].HBLength = "05";
+
+                    ModR[i].ModFlag = "+";
+                }
+                
+                addedFront = true;
+            }
+
+            if(last == ModR[i].name && addedBack == false)
+            {
+                if(ModR[i].address != "")
+                {
+                    ModStruct newMod;
+                    newMod.name = last;
+
+                    if(p.operation == "WORD" || p.operation == "BYTE")
+                        newMod.HBLength = "06";
+                    else
+                        newMod.HBLength = "05";
+
+                    newMod.address = p.locctr;
+
+                    if(isSub)
+                        newMod.ModFlag = "-";
+                    else
+                        newMod.ModFlag = "+";
+
+                    ModR.push_back(newMod);
+                }
+                else
+                {
+                    ModR[i].address = p.locctr;
+
+                    if(p.operation == "WORD" || p.operation == "BYTE")
+                        ModR[i].HBLength = "06";
+                    else
+                        ModR[i].HBLength = "05";
+
+                    if(isSub)
+                        ModR[i].ModFlag = "-";
+                    else
+                        ModR[i].ModFlag = "+";
+                }
+
+                addedBack = true;                
+            }
+        }
+    }
+    else
+    {
+        //operand must be a symbol
+        for(int i = 0; i < ModR.size(); i++)
+        {
+            if(ModR[i].name == p.operand)
+            {
+                if(ModR[i].address != "")
+                {
+                    ModStruct newMod;
+
+                    newMod.name = p.operand;
+                    newMod.address = p.locctr;
+                    newMod.HBLength = "05";
+                    newMod.ModFlag = "+";
+
+                    ModR.push_back(newMod);
+                }
+                else
+                {
+                    ModR[i].address = p.locctr;
+                    ModR[i].HBLength = "05";
+                    ModR[i].ModFlag = "+";                    
+                }
+            }
+        }
+    }
+
+
+    //check for Def Record matches
+    for(int i = 0; i < DefR.size(); i++)
+    {
+        if(p.label.find(DefR[i].name) != string::npos)
+            DefR[i].address = p.locctr;
+    }
+
+
+    //check for Mod Record matches
+
+    //could be a symbol or expression
+
+    //if an expression, split it into two symbols.
+    //if either symbol has already been defined in another modr, make a new one for it
+    //set both HB to 06
+    //if the operation is -, set second modflag to -
 }
 
 void PassTwo::addToRecord(ProgLine p)
@@ -478,7 +688,7 @@ void PassTwo::addToRecord(ProgLine p)
                 p.operand = "0" + p.operand;
             
             HeadR.push_back(p.operand + "^");
-            TextR.push_back(p.operand + "^");
+            TextR2.push_back(p);
         }
     }
     // conditions for Header and End Record
@@ -488,7 +698,6 @@ void PassTwo::addToRecord(ProgLine p)
             p.operand = "0" + p.operand;
             
         string totLength = f.addHex(p.locctr, f.totalLitLength());
-
         while(totLength.size() < 6)
             totLength = "0" + totLength;
 
@@ -500,32 +709,126 @@ void PassTwo::addToRecord(ProgLine p)
             EndR.back().pop_back();
     }
 
-    // conditions for Def record
-    if(Extdef.size() > 0)
-    {
-        for(int i = 0; i < Extdef.size(); i++)
-        {
-            if(p.label == Extdef.at(i))
-            {
-                DefR.push_back(Extdef.at(i) + "^");
-                DefR.push_back(p.locctr + "^");
-                Extdef.erase(Extdef.begin() + i);
-            }
-        }
-    }
-
-    // conditions for Ref record
-
+    // conditions for Def record and Mod Record
+    checkDefandMod(p);
+    
     //Conditions for Textfile
     if(p.objCode != "" && p.objCode != "NULL")
-        TextR.push_back(p.objCode + "^");
-
-    //Conditions for Mod Record
+    {
+        TextR2.push_back(p);
+    }
 
     return;
 }
 
 void PassTwo::writeObjFile()
+{
+    ofstream outFile;
+    outFile.open(directory + ".obj");
+
+    //if there are values in the record, print the record contents and a new line.
+
+    if(HeadR.size() > 1)
+    {
+        for(string s: HeadR)
+        {
+            outFile << s;
+        }
+        outFile << endl;
+    }
+
+    if(DefR.size() > 0)
+    {
+        outFile << "D^";
+        for(int i = 0; i < DefR.size(); i++)
+        {
+            outFile << DefR[i].name << "^";
+            if(i == DefR.size() - 1)
+                outFile << DefR[i].address;
+            else
+                outFile << DefR[i].address << "^";
+
+        }
+        outFile << endl;
+    }
+
+    if(RefR.size() > 1)
+    {
+        outFile << "R^";
+        for(int i = 0; i < RefR.size(); i++)
+        {
+            if(i == RefR.size() - 1)
+                outFile << RefR[i];
+            else
+                outFile << RefR[i] << "^";
+
+        }
+        outFile << endl;
+    }
+
+    if(TextR2.size() > 0)
+    {
+        // calculate a running sum of argument sizes. When sum = 60, indent and start a new text record.
+        // FORM: T^(start address)^(length of TR)^(opcodes)^(opcodes)
+        string startLoc = "000000";
+
+        while(!TextR2.empty())
+        {
+            vector<ProgLine> tempTR;
+            int count = 0;
+
+            while(count < 30 && !TextR2.empty()) 
+            {
+                if(count + TextR2.front().objCode.size() > 30)   //safety check
+                    break;
+                
+                count += TextR2.front().objCode.size();  //increment counter by the number of half bytes in opcode
+                tempTR.push_back(TextR2.front()); //add the object code to the current text record
+                TextR2.erase(TextR2.begin());     //remove that opcode from TextR
+            }
+            //calculate length
+            string endPt = f.addHex(tempTR.back().locctr, iFormat(tempTR.back()));
+            string length = f.subHex(endPt, tempTR.front().locctr);
+            
+            //print text record and indent
+            outFile << "T^" + startLoc + "^" + length + "^";
+            for(int i = 0; i < tempTR.size(); i++)
+            {
+                if(i == tempTR.size()- 1)
+                    outFile << tempTR[i].objCode;
+                else
+                {
+                    outFile << tempTR[i].objCode + "^";
+                }
+
+            }
+            outFile << "\n";
+            //increment starting locctr
+            startLoc = f.addHex(startLoc, length);
+        }    
+    }
+
+    if(ModR.size() > 0)
+    {
+        for(int i = 0; i < ModR.size(); i++)
+        {
+            outFile << "M^" + ModR[i].address + "^" + ModR[i].HBLength + "^" + ModR[i].ModFlag + ModR[i].name << endl;
+        }
+    }
+
+    if(EndR.size() > 1)
+    {
+        for(string s: EndR)
+            outFile << s;
+    
+        outFile << endl;
+    }
+
+    outFile.close();
+    return;
+}
+
+void PassTwo::printObjFile()
 {
     //fstream outFile;
     //outFile.open(directory + ".obj");
@@ -543,36 +846,83 @@ void PassTwo::writeObjFile()
         cout << endl;
     }
 
-    if(DefR.size() > 1)
+    if(DefR.size() > 0)
     {
-        for(string s: DefR)
-            cout << s;
-    
+        cout << "D^";
+        for(int i = 0; i < DefR.size(); i++)
+        {
+            cout << DefR[i].name << "^";
+            if(i == DefR.size() - 1)
+                cout << DefR[i].address;
+            else
+                cout << DefR[i].address << "^";
+
+        }
         cout << endl;
     }
 
     if(RefR.size() > 1)
     {
-        for(string s: RefR)
-            cout << s;
-    
+        cout << "R^";
+        for(int i = 0; i < RefR.size(); i++)
+        {
+            if(i == RefR.size() - 1)
+                cout << RefR[i];
+            else
+                cout << RefR[i] << "^";
+
+        }
         cout << endl;
     }
 
-    if(TextR.size() > 1)
+    if(TextR2.size() > 0)
     {
-        for(string s: TextR)
-            cout << s;
-    
-        cout << endl;
+        // calculate a running sum of argument sizes. When sum = 60, indent and start a new text record.
+        // FORM: T^(start address)^(length of TR)^(opcodes)^(opcodes)
+        string startLoc = "000000";
+
+        while(!TextR2.empty())
+        {
+            vector<ProgLine> tempTR;
+            int count = 0;
+
+            while(count < 30 && !TextR2.empty()) 
+            {
+                if(count + TextR2.front().objCode.size() > 30)   //safety check
+                    break;
+                
+                count += TextR2.front().objCode.size();  //increment counter by the number of half bytes in opcode
+                tempTR.push_back(TextR2.front()); //add the object code to the current text record
+                TextR2.erase(TextR2.begin());     //remove that opcode from TextR
+            }
+            //calculate length
+            string endPt = f.addHex(tempTR.back().locctr, iFormat(tempTR.back()));
+            string length = f.subHex(endPt, tempTR.front().locctr);
+            
+            //print text record and indent
+            cout << "T^" + startLoc + "^" + length + "^";
+            for(int i = 0; i < tempTR.size(); i++)
+            {
+                if(i == tempTR.size()- 1)
+                    cout << tempTR[i].objCode;
+                else
+                {
+                    cout << tempTR[i].objCode + "^";
+                }
+
+            }
+            cout << "\n";
+            //increment starting locctr
+            startLoc = f.addHex(startLoc, length);
+        }    
     }
 
-    if(ModR.size() > 1)
+    if(ModR.size() > 0)
     {
-        for(string s: ModR)
-            cout << s;
-    
-        cout << endl;
+        for(int i = 0; i < ModR.size(); i++)
+        {
+            cout << "M^" + ModR[i].address + "^" + ModR[i].HBLength + "^" + ModR[i].ModFlag + ModR[i].name << endl;
+        }
     }
 
     if(EndR.size() > 1)
@@ -584,6 +934,11 @@ void PassTwo::writeObjFile()
     }
 
     return;
+}
+
+void PassTwo::printProgLength()
+{
+
 }
 
 
@@ -611,8 +966,7 @@ string PassTwo::iFormat(ProgLine p)
     {
         if(p.operation.front() == '+')
             return "4";
-        
-        if(f.instructions.find(p.operation) != nullptr)
+        else if(f.instructions.find(p.operation) != nullptr)
         {
             InstPtr tempInst = f.instructions.find(p.operation);
 
@@ -620,10 +974,12 @@ string PassTwo::iFormat(ProgLine p)
                 return "3";
             else
                 return tempInst->data.iType;
-        }       
+        }
+        else if(p.operation == "WORD" || p.operation == "BYTE")
+            return "3";       
     }
 
-    return "";
+    return "0";
 }
 
 string PassTwo::findAddress(string litIn)
@@ -638,4 +994,16 @@ string PassTwo::findAddress(string litIn)
 
     cout << "Could not find " + litIn + "inside the symbol table." << endl;
     return "";
+}
+
+
+bool PassTwo::isAnExtRef(string operandIn)
+{
+    for(string ref: RefR)
+    {
+        if(operandIn.find(ref) != string::npos)
+            return true;
+    }
+    cout << "REF NOT FOUND: " << operandIn << endl;
+    return false;
 }

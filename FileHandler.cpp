@@ -204,17 +204,18 @@ void FileHandler::readProgram(string path)
     }
     else if(p.operation == "RESB")
     {
-        p.locctr = addHex(nextLoc, toHex(p.operand));
-        nextLoc = addHex(p.locctr, "3");
+        string res = toHex(p.operand);
+        p.locctr = nextLoc;
+        nextLoc = addHex(p.locctr, res);
     }
     else if(p.operation == "RESW")
     {
         int value = stoi(p.operand);
         value = value * 3;
-        string res = to_string(value);
 
+        string res = toHex(to_string(value));
         p.locctr = nextLoc;
-        nextLoc = addHex(nextLoc, "3");
+        nextLoc = addHex(p.locctr, res);
     }
     else if(p.operation == "BYTE")
     {
@@ -708,7 +709,7 @@ string FileHandler::toHex(string in)
 
     int i = stoi(in);
 
-    stringstream ss(in);
+    stringstream ss;
     ss << hex << i;
     string res = ss.str();  
 

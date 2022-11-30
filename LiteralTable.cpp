@@ -119,9 +119,9 @@ string LiteralTable::assignValue(string in)
     string val, contents;
     int hex, ascii = 0;
     char t = in.at(1);
+    char d = in.at(0);
     bool inContent = false;
     stringstream stream;
-
     //get literal contents
     for(int i = 0; i < in.size(); i++)
     {
@@ -135,7 +135,7 @@ string LiteralTable::assignValue(string in)
             contents += in.at(i);
     }
 
-    if(t == 'X' || t == 'x')
+    if(t == 'X' || t == 'x'|| d == 'X' || d == 'x')
     {
         //Literal is byte, convert from hex to decimal and return number
         if(contents.size() % 2 != 0)
@@ -148,7 +148,7 @@ string LiteralTable::assignValue(string in)
         return contents;
     }
 
-    else if(t == 'C'|| t == 'c')
+    else if(t == 'C'|| t == 'c'|| d == 'C' || d == 'c')
     {
         //Literal is character, convert to ASCII and concatnate values for return
         string cHex;

@@ -170,7 +170,7 @@ void Expressions::readExpressions(string line)
             continue;
         Expression result;
 
-        if(tempExp.find(",X") != string::npos || tempExp.find(",x") != string::npos)
+        if(tempExp.find(",") != string::npos || tempExp.find(",") != string::npos)
             hasIdx = true;
 
         if(tempExp.at(0) == '=')
@@ -296,8 +296,12 @@ string Expressions::readSingleExp(string tempExp)
     bool isLit = false;
 
     Expression result;
+    
+        
+
         if(tempExp.find(",X") != string::npos || tempExp.find(",x") != string::npos)
             hasIdx = true;
+
 
         if(tempExp.at(0) == '=')
         { 
@@ -379,7 +383,7 @@ string Expressions::readSingleExp(string tempExp)
             }
         }
         if(!isLit && !RF && result.name.at(0) != '-')
-        hasIdx = false;
+            hasIdx = false;
 
         stringstream ss;
         ss << hex << result.value;
@@ -572,7 +576,7 @@ Expression Expressions::evaluate(string in)
             //expression could be a number. if its not a number...
             if(!e.isNum(in))
             {
-                cout << "ERROR: INVALID EXPRESSION ("+in+") COULD NOT BE INTERPRETED. \t "+ temp.symbol + "\n";
+                //cout << "ERROR1: INVALID EXPRESSION ("+in+") COULD NOT BE INTERPRETED. \t "+ temp.symbol + "\n";
                 return res;
             }
 
@@ -624,7 +628,7 @@ Expression Expressions::evaluate(string in)
         {
             if(!e.isNum(op1))
             {
-                cout << "ERROR1: INVALID EXPRESSION ("+in+") COULD NOT BE INTERPRETED. \t "+ o1.symbol + "\n";
+                //cout << "ERROR1: INVALID EXPRESSION ("+in+") COULD NOT BE INTERPRETED. \t "+ o1.symbol + "\n";
                 return res;
             }
 

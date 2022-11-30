@@ -398,7 +398,53 @@ NodePtr SymbolTable::find(const SymbolNode in) const
     return find(in, root);
 }
 
+void SymbolTable::inOrderWrite(string path)
+{
+    inOrderWrite(root, path);
+}
 
+void SymbolTable::inOrderWrite(const NodePtr nodePtr, string path) const
+{
+	ofstream outFile;
+
+    outFile.open(path, ios::app);
+
+    if(!outFile)
+    {
+        cout << "Could not open file: " + path + ". ";
+        exit(102);
+    }
+    stack<NodePtr> s;
+    NodePtr tNode = nodePtr;
+    int i = 0;
+    while ((tNode != nullptr || s.empty() == false) && i < 20)
+    {
+        if(i == 0)
+            outFile << "LABEL\t" << setw(7) << "VALUE" << setw(7) << "RFLAG" << setw(7) << "IFLAG" << setw(7) << "MFLAG\n" << endl;
+
+
+        while (tNode != nullptr)
+        {
+            s.push(tNode);
+            tNode = tNode->left;
+        }
+  
+        tNode = s.top();
+        s.pop();
+		
+		outFile << setw(7) << nodePtr->data.symbol << setw(7) <<  nodePtr->data.hexValue << setw(7) <<
+		nodePtr->data.rFlag << setw(7) << nodePtr->data.iFlag << setw(7) << nodePtr->data.mFlag << endl;
+		
+        tNode = tNode->right;
+        i++;
+
+        if(i == 20)
+        {
+            pause();
+            i = 0;
+        }
+    }
+}
 /********************************************************************
 *** FUNCTION : insert(SymbolNode in, NodePtr & nodePtr)           ***
 *********************************************************************

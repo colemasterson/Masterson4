@@ -64,6 +64,7 @@ class SymbolTable
         NodePtr find(const SymbolNode) const;
 
         void inOrder() const;
+        void inOrderWrite(string);
         void view(const NodePtr) const;
         void pause() const;
         
@@ -81,6 +82,7 @@ class SymbolTable
         void destroy(NodePtr &);
         void deleteNode(NodePtr &);
         void inOrder(const NodePtr) const;
+        void inOrderWrite(const NodePtr, string) const;
 
         void findMaxNode(NodePtr &, NodePtr &);
         void insert(const SymbolNode, NodePtr &);
