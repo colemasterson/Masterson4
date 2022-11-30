@@ -19,7 +19,6 @@ class PassTwo
         string firstTwoHex(ProgLine);
         string last4to6Hex(ProgLine);
         string directiveOpCode(ProgLine);
-        string calcDisplacement(ProgLine);
         string calcObjCode(ProgLine);
 
         void saveDefandRef(ProgLine);
@@ -28,6 +27,8 @@ class PassTwo
 
         string HexToBin(string);
         string BinToHex(string);
+        string findAddress(string);
+        string iFormat(ProgLine);
 
         vector<string> HeadR, EndR, TextR, DefR, RefR, ModR;
         vector<string> Extdef, Extref;

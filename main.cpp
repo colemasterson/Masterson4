@@ -27,14 +27,15 @@ int main(int argc, char* argv[])
     if(argc == 1)
     {
 
-        cout << "ENTER PROGRAM FILE:\n";
+/*         cout << "ENTER PROGRAM FILE:\n";
         string e = getPath();
 
         FileHandler prog(e);
         prog.expressions.symbols.inOrder();
         prog.expressions.literals.printLitTable();
+ */
 
-        PassTwo p(prog.getIntName(prog.path));
+        PassTwo p;
 
         //testFunction();
         return 0;
@@ -43,11 +44,7 @@ int main(int argc, char* argv[])
     {
         string e(argv[1]);
 
-        FileHandler prog(e);
-        prog.expressions.symbols.inOrder();
-        prog.expressions.literals.printLitTable();
-
-        PassTwo p2;
+        PassTwo p2(e);
 
         return 0;
     }

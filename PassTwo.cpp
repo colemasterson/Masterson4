@@ -3,6 +3,14 @@
 PassTwo::PassTwo()
 {
     //string path = f.getPath();
+
+    cout << "ENTER PROGRAM FILE:\n";
+    string e = f.getPath();
+
+    f.readProgram(e);
+    f.expressions.symbols.inOrder();
+    f.expressions.literals.printLitTable();
+
     string path = "sic2.int";
     setDirectory(path);
     readIntFile(path);
@@ -11,6 +19,11 @@ PassTwo::PassTwo()
 PassTwo::PassTwo(string path)
 {
     setDirectory(path);
+
+    f.readProgram(directory + ".dat");
+    f.expressions.symbols.inOrder();
+    f.expressions.literals.printLitTable();
+
     readIntFile(path);
 }
 
@@ -55,6 +68,8 @@ void PassTwo::readIntFile(string path)
         exit(102);
     }
 
+    f.expressions.symbols.inOrder();
+
     while(getline(inFile, tLine))
     {
         ProgLine p;
@@ -69,7 +84,7 @@ void PassTwo::readIntFile(string path)
         if(isEOP)
         {
             for(string ar : p.contents)
-            {
+            {   
                 if(ar.at(0) == '=')
                 {
                     for(Literal lit : f.expressions.literals.lits)
@@ -110,7 +125,7 @@ void PassTwo::readIntFile(string path)
         if(p.label.back() == ':')
             p.label = p.label.substr(0, p.label.size()-1);
 
-        p.objCode = firstTwoHex(p);  
+        p.objCode = calcObjCode(p);  
         f.printProg(p);
         addToRecord(p);
 
@@ -141,14 +156,14 @@ string PassTwo::calcObjCode(ProgLine p)
 {
     string first3, last3;
     first3 = firstTwoHex(p);
-  //  last3 = calcDisplacement(p);
+    last3 = last4to6Hex(p);
     return first3 + last3;
 }
 string PassTwo::firstTwoHex(ProgLine p)
 {
     bool isF4;  //set to true if instruction is format 4
     string instr = p.operation;
-    string result = "NULL";
+    string result = "";
     string tOpCode, binOp, tOpFormat;
     //if theres an operand, find the opcode from the tree
 
@@ -162,6 +177,9 @@ string PassTwo::firstTwoHex(ProgLine p)
                 return lit.opVal;
         }
     }
+
+    if(p.operation == "START" ||p.operation == "END" || p.operation == "EXTDEF" ||p.operation == "EXTREF" || p.operation == "BASE" || p.operation == "EQU")
+        return "";
 
     if(!instr.empty())
     {
@@ -190,8 +208,7 @@ string PassTwo::firstTwoHex(ProgLine p)
             if(instr == "RESW" || instr == "RESB")
             {
                 //check if value is to large to hold in a format 3 instruction
-                if(abs(f.toDec(p.operand)) >= 2048)
-                    isF4 = true;
+                return "";
             }
 
         }
@@ -234,23 +251,129 @@ string PassTwo::firstTwoHex(ProgLine p)
 
 string PassTwo::last4to6Hex(ProgLine p)
 {
+    SymbolNode tSym;
+
     string adrType, disp;
+    string tOperand = p.operand;
+    //string opValue;
+    string opAddress; 
     bool isF4 = false;
-    // format 4 condition
-    if(p.operation.at(0) == '+')
+
+    bool isConst = false;
+    bool isSym = false;
+    bool isExp = false;
+    bool isLit = false;
+
+    int dLength = 3;
+
+    //if certain directive, return nothing
+    if(f.isADirective(p))
+        return "";
+
+    //remove front addressing char and determine operand type
+    if(p.operand.front() == '@' || p.operand.front() == '#')
+        tOperand = tOperand.substr(1, tOperand.size());
+
+    //remove the indexing from operand 
+    if(p.operand.find(',') != string::npos)
     {
+        int idx = p.operand.find(',');
+        tOperand = tOperand.substr(0, idx);
+    }
+
+    //Determine if operand is a constant, literal, expression, or symbol
+
+    if(f.e.isNum(tOperand))
+    {   //check if operand is a constant
+        isConst = true;
+        opAddress = f.expressions.readSingleExp(p.operand);
+    }
+    else if(p.operand.front() == '=' && p.operation != "*")
+    {   // check if operand is a literal
+        isLit = true;
+        opAddress = findAddress(p.operand);
+    }
+    else if(p.operand.front() == '=' && p.operation == "*")
+    {   // check if literal at end of file
+        return "";
+    }
+    else if(p.operand.find('-') != string::npos || p.operand.find('+') != string::npos || p.operand.find(',') != string::npos) //check if operand is an expression
+    {   //check if operand is an expression
+        opAddress = f.expressions.readSingleExp(p.operand);
+        isExp = true;
+    }
+    else
+    {   //check if operand is a symbol
+        tSym.symbol = tOperand;
+
+        if(f.expressions.symbols.find(tSym) != nullptr)
+            isSym = true;
+        
+        NodePtr realSymbol = f.expressions.symbols.find(tSym);
+        opAddress = realSymbol->data.hexValue;
+    }
+    
+    if(p.operation.at(0) == '+')
+    {   // format 4 condition
         adrType = "1";
         isF4 = true;
     }
+    else if(f.toDec(opAddress) > 2047 || f.toDec(opAddress) < -2048)
+    {   //base relative condition
+        adrType = "4";
 
+    }
+    else
+    {   //not BR or F4, must be PC
+        adrType = "2";
+    }
+
+    //calculate displacement based on the set operand flags
+
+    if(isConst)
+    {
+        disp = f.toHex(tOperand);
+    }
+    else if(isLit)
+    {
+        for(Literal lit: f.expressions.literals.lits)
+        {
+            if(lit.name == tOperand)
+            {
+                disp = f.subHex(lit.intAddress, (f.addHex(p.locctr, iFormat(p))));
+            }
+        }
+    }
+    else if(isExp)
+    {
+        disp = f.subHex(f.expressions.readSingleExp(p.operand), (f.addHex(p.locctr, iFormat(p))));
+    }
+    else if(isSym)
+    {
+
+        NodePtr s = f.expressions.symbols.find(tSym);
+        string symVal, nextLoc;
+        symVal = s->data.hexValue;
+        nextLoc = f.addHex(p.locctr, iFormat(p));
+
+        disp = f.subHex(s->data.hexValue, (f.addHex(p.locctr, iFormat(p))));
+    }
+
+    if(isF4)
+        dLength = 5;
     
 
+    while(disp.size() < dLength)
+        disp = "0" + disp;
 
     return adrType + disp;
 }
-//first calc if its Base, PC or Format 4 and add 4, 2, or 1 to the object code
 
-//next determine the case for calculating displacement
+//first, determine if the operand is a literal, constant, symbol or expression
+
+//next, calc if its Base, PC or Format 4 and add 4, 2, or 1 to the object code
+
+//last, determine the case for calculating displacement
 
     //CERTAIN DIRECTIVES [START, END, EXTDEF, EXTREF, ]
     //Return nothing
@@ -266,60 +389,6 @@ string PassTwo::last4to6Hex(ProgLine p)
 
     //CONSTANT
     // Hex Value of the constant
-
-
-
-string PassTwo::calcDisplacement(ProgLine p)
-{
-    //try to find a symbol value with the operand and return next locctr - symbol value
-    SymbolNode s;
-    s.symbol = p.operand;
-    NodePtr tSymbol = f.expressions.symbols.find(s);
-
-    if(p.operation.at(0) == '+')
-    {
-        p.objCode += "1";
-        //calculate displacement: D = OperandLoc - (CurrAddr + IFormat)
-    }
-
-    if(tSymbol != nullptr)
-    {
-        // if the value of the current operand plus the current locctr is outside the bounds -2048 to 2047, instruction 4 format will be used
-        string tDisp = f.expressions.readSingleExp(p.operand);
-
-        string totalDisp = f.addHex(p.locctr, tDisp);
-        if((f.toDec(p.locctr)) <= 2047 && f.toDec(p.locctr) >= -2048)
-        {
-            //PC relative will be used, add 2 to objcode
-            p.objCode += "2";
-        }
-        else
-        {
-            p.objCode += "4";
-        }
-
-    }
-
-   if((f.toDec(p.locctr)) <= 2047 || f.toDec(p.locctr) >= -2048)
-   {
-        //PC relative will be used, add 2 to objcode
-        p.objCode += "2";
-   }
-
-        if(tSymbol != nullptr)
-        {
-            int end = f.toDec(tSymbol->data.hexValue);
-            int start = f.toDec(f.addHex(p.locctr, "4"));
-
-            string totalDisp = f.toHex(end - start);
-            while(totalDisp.size() < 5)
-                totalDisp = "0" + totalDisp;
-            
-            p.objCode += totalDisp;
-        }
-
-    return "000";
-}
 
 string PassTwo::HexToBin(string hNum)
 {
@@ -418,7 +487,6 @@ void PassTwo::addToRecord(ProgLine p)
         while(p.operand.size() < 6)
             p.operand = "0" + p.operand;
             
-        cout << "LOCCTR: " + p.locctr + "\t" + "LIT LENGTH: " + f.totalLitLength() << endl;
         string totLength = f.addHex(p.locctr, f.totalLitLength());
 
         while(totLength.size() < 6)
@@ -426,6 +494,10 @@ void PassTwo::addToRecord(ProgLine p)
 
         HeadR.push_back(totLength);
         EndR.push_back(HeadR.at(2));
+
+        //if the last character of the last string in the end file ends in a carot, delete it.
+        if(EndR.back().back() == '^')
+            EndR.back().pop_back();
     }
 
     // conditions for Def record
@@ -465,8 +537,9 @@ void PassTwo::writeObjFile()
     if(HeadR.size() > 1)
     {
         for(string s: HeadR)
+        {
             cout << s;
-    
+        }
         cout << endl;
     }
 
@@ -530,4 +603,39 @@ string PassTwo::BinToHex(string bin)
     sResult.pop_back();
 
     return sResult;
+}
+
+string PassTwo::iFormat(ProgLine p)
+{
+    if(!p.operation.empty())
+    {
+        if(p.operation.front() == '+')
+            return "4";
+        
+        if(f.instructions.find(p.operation) != nullptr)
+        {
+            InstPtr tempInst = f.instructions.find(p.operation);
+
+            if(tempInst->data.iType == "34")
+                return "3";
+            else
+                return tempInst->data.iType;
+        }       
+    }
+
+    return "";
+}
+
+string PassTwo::findAddress(string litIn)
+{
+    for(Literal lit : f.expressions.literals.lits)
+    {
+        if(litIn == lit.name)
+        {
+            return lit.intAddress;
+        }
+    }
+
+    cout << "Could not find " + litIn + "inside the symbol table." << endl;
+    return "";
 }

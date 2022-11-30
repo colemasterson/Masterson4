@@ -58,6 +58,8 @@ class FileHandler
         string getIntName(string);
 
         string addHex(string, string);
+        string subHex(string, string);
+
         string toHex(string);
         string toHex(int);
         int toDec(string);

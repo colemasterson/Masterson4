@@ -822,3 +822,31 @@ void FileHandler::printProg(ProgLine p)
 
     return;
 }
+
+string FileHandler::subHex(string currL, string decr)
+{
+    stringstream ss1, ss2, ss3;
+    int cDec, iDec, sDec;
+    string result;
+
+    ss1 << hex << currL;
+    ss1 >> cDec;
+
+    //cout << cDec << endl;
+    ss1.clear();
+
+    ss2 << hex << decr;
+    ss2 >> iDec;
+
+    //cout << iDec << endl;
+    ss2.clear();
+
+    sDec = cDec - iDec;
+
+    ss3 << hex << sDec;
+    result = ss3.str();
+
+    ss3.clear();
+    //cout << "Result: " << sDec << endl;
+    return result;
+}
