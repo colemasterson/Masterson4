@@ -1,8 +1,8 @@
 /******************************************************************** 
 ***  NAME        : Cole Masterson                                 *** 
 ***  CLASS       : CSC 354                                        *** 
-***  ASSIGNMENT  : 3                                              *** 
-***  DUE DATE    : 11/2/2022                                      *** 
+***  ASSIGNMENT  : 4                                              *** 
+***  DUE DATE    : 11/30/2022                                      *** 
 ***  INSTRUCTOR  : GAMRADT                                        *** 
 ********************************************************************* 
 DESCRIPTION : ErrorCheck.h is where the ErrorCheck class is defined. 

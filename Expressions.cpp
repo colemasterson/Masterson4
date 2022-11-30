@@ -1,10 +1,10 @@
 /******************************************************************** 
 ***  NAME        : Cole Masterson                                 *** 
 ***  CLASS       : CSC 354                                        *** 
-***  ASSIGNMENT  : 2                                              *** 
-***  DUE DATE    : 10/15/2022                                     *** 
+***  ASSIGNMENT  : 4                                              *** 
+***  DUE DATE    : 11/30/2022                                      *** 
 ***  INSTRUCTOR  : GAMRADT                                        *** 
-********************************************************************* 
+*********************************************************************
 ***  DESCRIPTION : Expressions.cpp is where the Expression class is 
 implemented. An Expression object has 2 member values: a SymbolTable &    
 LiteralTable object. Expression.cpp contains a struct, 2 constructors, 

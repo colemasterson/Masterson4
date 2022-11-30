@@ -1,10 +1,10 @@
 /******************************************************************** 
 ***  NAME        : Cole Masterson                                 *** 
 ***  CLASS       : CSC 354                                        *** 
-***  ASSIGNMENT  : 3                                              *** 
-***  DUE DATE    : 11/2/2022                                      *** 
+***  ASSIGNMENT  : 4                                              *** 
+***  DUE DATE    : 11/30/2022                                      *** 
 ***  INSTRUCTOR  : GAMRADT                                        *** 
-********************************************************************* 
+*********************************************************************  
 ***  DESCRIPTION : FileHandler.cpp is where the FileHandler program 
 is defined. The FileHandler class has 1 struct, 2 constructors, a 
 destructor, 17 public methods, a string for the program and 

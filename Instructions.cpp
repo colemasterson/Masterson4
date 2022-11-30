@@ -1,10 +1,10 @@
 /******************************************************************** 
 ***  NAME        : Cole Masterson                                 *** 
 ***  CLASS       : CSC 354                                        *** 
-***  ASSIGNMENT  : 3                                              *** 
-***  DUE DATE    : 11/2/2022                                      *** 
+***  ASSIGNMENT  : 4                                              *** 
+***  DUE DATE    : 11/30/2022                                      *** 
 ***  INSTRUCTOR  : GAMRADT                                        *** 
-********************************************************************* 
+*********************************************************************
 DESCRIPTION : Instructions.cpp is where the Instructions class is defined.
 A Instructions object has 2 member values: a string path, and a     
 InstPtr root. Instructions.cpp contains 3 structs, 3 constructors, a  

@@ -1,8 +1,8 @@
 /******************************************************************** 
 ***  NAME        : Cole Masterson                                 *** 
 ***  CLASS       : CSC 354                                        *** 
-***  ASSIGNMENT  : 3                                              *** 
-***  DUE DATE    : 11/2/2022                                      *** 
+***  ASSIGNMENT  : 4                                              *** 
+***  DUE DATE    : 11/30/2022                                     *** 
 ***  INSTRUCTOR  : GAMRADT                                        *** 
 ********************************************************************* 
 DESCRIPTION : SymbolTable.cpp is where the SymbolTable class is defined.
@@ -432,8 +432,8 @@ void SymbolTable::inOrderWrite(const NodePtr nodePtr, string path) const
         tNode = s.top();
         s.pop();
 		
-		outFile << setw(7) << nodePtr->data.symbol << setw(7) <<  nodePtr->data.hexValue << setw(7) <<
-		nodePtr->data.rFlag << setw(7) << nodePtr->data.iFlag << setw(7) << nodePtr->data.mFlag << endl;
+		outFile << setw(7) << tNode->data.symbol << setw(7) <<  tNode->data.hexValue << setw(7) <<
+		tNode->data.rFlag << setw(7) << tNode->data.iFlag << setw(7) << tNode->data.mFlag << endl;
 		
         tNode = tNode->right;
         i++;

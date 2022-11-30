@@ -1,5 +1,31 @@
+/******************************************************************** 
+***  NAME        : Cole Masterson                                 *** 
+***  CLASS       : CSC 354                                        *** 
+***  ASSIGNMENT  : 4                                              *** 
+***  DUE DATE    : 11/30/2022                                      *** 
+***  INSTRUCTOR  : GAMRADT                                        *** 
+********************************************************************* 
+* This is where the PassTwo class is defined. This class contains 2
+structs, 6 object code records, 21 public methods, two constructors,
+and a destructor.
+*********************************************************************/
 #include "PassTwo.h"
 
+
+/********************************************************************
+*** FUNCTION : PassTwo::PassTwo()                                 ***
+*********************************************************************
+*** DESCRIPTION : creates a PassTwo, Runs pass one, and uses the ***
+   .int file for the main methods of the class.
+
+*** INPUT ARGS : string in                                        ***
+
+*** OUTPUT ARGS : n/a                                             ***
+
+*** IN/OUT ARGS : n/a                                             ***
+
+*** RETURN : n/a                                                  ***
+********************************************************************/
 PassTwo::PassTwo()
 {
     // prompt user to enter program file name, store in FileHandler object f
@@ -17,6 +43,21 @@ PassTwo::PassTwo()
     readIntFile(f.intName);
 }
 
+
+/********************************************************************
+*** FUNCTION : PassTwo::PassTwo(string datPath)                   ***
+*********************************************************************
+*** DESCRIPTION : creates a SymbolTable, initializes the root to null. ***
+    getPath is called to initialize path, and readFile is called.
+
+*** INPUT ARGS : string in                                        ***
+
+*** OUTPUT ARGS : n/a                                             ***
+
+*** IN/OUT ARGS : n/a                                             ***
+
+*** RETURN : n/a                                                  ***
+********************************************************************/
 PassTwo::PassTwo(string datPath)
 {
     setDirectory(datPath);
@@ -29,11 +70,39 @@ PassTwo::PassTwo(string datPath)
     readIntFile(f.intName);
 }
 
+
+/********************************************************************
+*** FUNCTION : PassTwo::~PassTwo()                                ***
+*********************************************************************
+*** DESCRIPTION : Destructor for PassTwo Object
+
+*** INPUT ARGS : n/a                                              ***
+
+*** OUTPUT ARGS : n/a                                             ***
+
+*** IN/OUT ARGS : n/a                                             ***
+
+*** RETURN : n/a                                                  ***
+********************************************************************/
 PassTwo::~PassTwo()
 {
     
 }
 
+
+/********************************************************************
+*** FUNCTION : void PassTwo::setDirectory(string path)            ***
+*********************************************************************
+*** DESCRIPTION : set the root directory for easier file opening
+
+*** INPUT ARGS : string path                                        ***
+
+*** OUTPUT ARGS : n/a                                             ***
+
+*** IN/OUT ARGS : n/a                                             ***
+
+*** RETURN : n/a                                                  ***
+********************************************************************/
 void PassTwo::setDirectory(string path)
 {
     if(path.find('.') != string::npos)
@@ -47,7 +116,20 @@ void PassTwo::setDirectory(string path)
     return;
 }
 
+/********************************************************************
+*** FUNCTION : void PassTwo::readIntFile(string path)             ***
+*********************************************************************
+*** DESCRIPTION : reads the intermediate file, calculates opcodes,
+and calculates object code records.
 
+*** INPUT ARGS : string in                                        ***
+
+*** OUTPUT ARGS : n/a                                             ***
+
+*** IN/OUT ARGS : n/a                                             ***
+
+*** RETURN : n/a                                                  ***
+********************************************************************/
 void PassTwo::readIntFile(string path)
 {
     HeadR.push_back("H^");
@@ -69,12 +151,12 @@ void PassTwo::readIntFile(string path)
         exit(102);
     }
 
-    outFileTxt << setw(2) << 
-    "LINE#" << setw(5)  <<
-    "LOCCTER" << setw(15) << 
+    outFileTxt << setw(4) << 
+    "LINE" << setw(7)  <<
+    "LOCCTR" << setw(15) << 
     "LABEL" << setw(15) << 
     "OPERATION" << setw(20) << 
-    "OPERAND" << setw(15) << "OBJECT CODE" << endl;
+    "OPERAND" << setw(15) << "OBJCODE" << endl;
 
     while(getline(inFile, tLine))
     {
@@ -152,18 +234,19 @@ void PassTwo::readIntFile(string path)
 
     }
     inFile.close();
-
+    
     outFileTxt << "Literal Table" << endl;
     outFileTxt << setw(20) << "Name" << setw(15) << "Value" << setw(15) << "Length" << setw(15) << "Address"<< endl;
     for(Literal tLit : f.expressions.literals.lits)
     {
         outFileTxt << setw(20) << tLit.name << setw(15) << tLit.opVal << setw(15) << tLit.length << setw(15) << tLit.intAddress << endl;
     }
-    
+     outFileTxt.close();
+   
     
     f.expressions.symbols.inOrderWrite(directory + ".txt");
 
-    outFileTxt.close();
+    printProgLength();
 
     writeObjFile();
 
@@ -171,6 +254,20 @@ void PassTwo::readIntFile(string path)
     return;
 }
 
+/********************************************************************
+*** FUNCTION : string PassTwo::calcObjCode(ProgLine p)            ***
+*********************************************************************
+*** DESCRIPTION : calculates the object code for a given line of an
+intermediate file.
+
+*** INPUT ARGS : ProgLine p                                       ***
+
+*** OUTPUT ARGS : n/a                                             ***
+
+*** IN/OUT ARGS : n/a                                             ***
+
+*** RETURN : n/a                                                  ***
+********************************************************************/
 string PassTwo::calcObjCode(ProgLine p)
 {
     string first3, last3;
@@ -178,6 +275,21 @@ string PassTwo::calcObjCode(ProgLine p)
     last3 = last4to6Hex(p);
     return first3 + last3;
 }
+
+/********************************************************************
+*** FUNCTION : string PassTwo::firstTwoHex(ProgLine p)            ***
+*********************************************************************
+*** DESCRIPTION : calculates the instruction and addressing bits of
+a program line's opcode.
+
+*** INPUT ARGS : ProgLine p                                       ***
+
+*** OUTPUT ARGS : string                                          ***
+
+*** IN/OUT ARGS : n/a                                             ***
+
+*** RETURN : n/a                                                  ***
+********************************************************************/
 string PassTwo::firstTwoHex(ProgLine p)
 {
     bool isF4;  //set to true if instruction is format 4
@@ -274,7 +386,20 @@ string PassTwo::firstTwoHex(ProgLine p)
     return result;
 }
 
+/********************************************************************
+*** FUNCTION : string PassTwo::last4to6Hex(ProgLine p)            ***
+*********************************************************************
+*** DESCRIPTION : calculates the relative addressing and displacement
+bits for a given program line's object code.
 
+*** INPUT ARGS : ProgLine p                                       ***
+
+*** OUTPUT ARGS : string                                          ***
+
+*** IN/OUT ARGS : n/a                                             ***
+
+*** RETURN : n/a                                                  ***
+********************************************************************/
 string PassTwo::last4to6Hex(ProgLine p)
 {
     SymbolNode tSym;
@@ -429,6 +554,20 @@ string PassTwo::last4to6Hex(ProgLine p)
     //CONSTANT
     // Hex Value of the constant
 
+
+/********************************************************************
+*** FUNCTION : string PassTwo::HexToBin(string hNum)              ***
+*********************************************************************
+*** DESCRIPTION : Converts hexadecimal string to binary.
+
+*** INPUT ARGS : string in                                        ***
+
+*** OUTPUT ARGS : string                                          ***
+
+*** IN/OUT ARGS : n/a                                             ***
+
+*** RETURN : n/a                                                  ***
+********************************************************************/
 string PassTwo::HexToBin(string hNum)
 {
     int length = 0;
@@ -474,6 +613,19 @@ string PassTwo::HexToBin(string hNum)
     return revised;
 }
 
+/********************************************************************
+*** FUNCTION : void PassTwo::saveDefandRef(ProgLine p)            ***
+*********************************************************************
+*** DESCRIPTION : Save EXTDEF and EXTREF directives to records.
+
+*** INPUT ARGS : ProgLine p                                       ***
+
+*** OUTPUT ARGS : n/a                                             ***
+
+*** IN/OUT ARGS : n/a                                             ***
+
+*** RETURN : n/a                                                  ***
+********************************************************************/
 void PassTwo::saveDefandRef(ProgLine p)
 {
     if(p.operation == "EXTDEF")
@@ -517,6 +669,20 @@ void PassTwo::saveDefandRef(ProgLine p)
     }
 }
 
+/********************************************************************
+*** FUNCTION : void PassTwo::checkDefandMod(ProgLine p)           ***
+*********************************************************************
+*** DESCRIPTION : determine if a Program line should be added to the
+MR or the DR
+
+*** INPUT ARGS : ProgLine p                                       ***
+
+*** OUTPUT ARGS : n/a                                             ***
+
+*** IN/OUT ARGS : n/a                                             ***
+
+*** RETURN : n/a                                                  ***
+********************************************************************/
 void PassTwo::checkDefandMod(ProgLine p)
 {
     bool isExpression;
@@ -670,6 +836,20 @@ void PassTwo::checkDefandMod(ProgLine p)
     //if the operation is -, set second modflag to -
 }
 
+/********************************************************************
+*** FUNCTION : void PassTwo::addToRecord(ProgLine p)              ***
+*********************************************************************
+*** DESCRIPTION : uses conditional logic to determine if a ProgLine
+should be added to an object code record.
+
+*** INPUT ARGS : ProgLine p                                       ***
+
+*** OUTPUT ARGS : n/a                                             ***
+
+*** IN/OUT ARGS : n/a                                             ***
+
+*** RETURN : n/a                                                  ***
+********************************************************************/
 void PassTwo::addToRecord(ProgLine p)
 {
     //conditions for Header Record
@@ -721,6 +901,19 @@ void PassTwo::addToRecord(ProgLine p)
     return;
 }
 
+/********************************************************************
+*** FUNCTION : void PassTwo::writeObjFile()                       ***
+*********************************************************************
+*** DESCRIPTION : writes the object code records to the outFile.
+
+*** INPUT ARGS : n/a                                              ***
+
+*** OUTPUT ARGS : n/a                                             ***
+
+*** IN/OUT ARGS : n/a                                             ***
+
+*** RETURN : n/a                                                  ***
+********************************************************************/
 void PassTwo::writeObjFile()
 {
     ofstream outFile;
@@ -828,6 +1021,19 @@ void PassTwo::writeObjFile()
     return;
 }
 
+/********************************************************************
+*** FUNCTION : void PassTwo::printObjFile()                       ***
+*********************************************************************
+*** DESCRIPTION : prints the object code records to the command line.
+
+*** INPUT ARGS : n/a                                              ***
+
+*** OUTPUT ARGS : n/a                                             ***
+
+*** IN/OUT ARGS : n/a                                             ***
+
+*** RETURN : n/a                                                  ***
+********************************************************************/
 void PassTwo::printObjFile()
 {
     //fstream outFile;
@@ -936,12 +1142,53 @@ void PassTwo::printObjFile()
     return;
 }
 
+/********************************************************************
+*** FUNCTION : PassTwo::printProgLength()                         ***
+*********************************************************************
+*** DESCRIPTION : prints the program length to the outFile.
+
+*** INPUT ARGS : n/a                                              ***
+
+*** OUTPUT ARGS : n/a                                             ***
+
+*** IN/OUT ARGS : n/a                                             ***
+
+*** RETURN : n/a                                                  ***
+********************************************************************/
 void PassTwo::printProgLength()
 {
+    ofstream outFile;
 
+    outFile.open(directory + ".txt", ios::app);
+
+    if(!outFile)
+        exit(102);
+
+    string ProgEnd = HeadR.back();
+
+    while(ProgEnd.front() == '0')
+        ProgEnd = ProgEnd.substr(1, ProgEnd.size());
+
+    outFile << "PROGRAM LENGTH = " << ProgEnd << endl;
+
+    outFile.close();
+
+    return;    
 }
 
+/********************************************************************
+*** FUNCTION : string PassTwo::BinToHex(string bin)               ***
+*********************************************************************
+*** DESCRIPTION : converts a binary string to hexadecimal string.
 
+*** INPUT ARGS : string in                                        ***
+
+*** OUTPUT ARGS : string                                          ***
+
+*** IN/OUT ARGS : n/a                                             ***
+
+*** RETURN : n/a                                                  ***
+********************************************************************/
 string PassTwo::BinToHex(string bin)
 {
     std::stringstream reader(bin);
@@ -960,6 +1207,19 @@ string PassTwo::BinToHex(string bin)
     return sResult;
 }
 
+/********************************************************************
+*** FUNCTION : string PassTwo::iFormat(ProgLine p)                ***
+*********************************************************************
+*** DESCRIPTION : returns the instruction format of a program line.
+
+*** INPUT ARGS : ProgLine p                                       ***
+
+*** OUTPUT ARGS : string                                          ***
+
+*** IN/OUT ARGS : n/a                                             ***
+
+*** RETURN : n/a                                                  ***
+********************************************************************/
 string PassTwo::iFormat(ProgLine p)
 {
     if(!p.operation.empty())

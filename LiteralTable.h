@@ -1,10 +1,10 @@
 /******************************************************************** 
 ***  NAME        : Cole Masterson                                 *** 
 ***  CLASS       : CSC 354                                        *** 
-***  ASSIGNMENT  : 3                                              *** 
-***  DUE DATE    : 11/2/2022                                      *** 
+***  ASSIGNMENT  : 4                                              *** 
+***  DUE DATE    : 11/30/2022                                      *** 
 ***  INSTRUCTOR  : GAMRADT                                        *** 
-********************************************************************* 
+*********************************************************************  
 LiteralTable.h is where the LiteralTable class is defined.
 A LiteralTable object has 2 member values: a linked list of strings
 used to hold the literals, and a string usermessage to display errors.

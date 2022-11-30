@@ -1,3 +1,15 @@
+/******************************************************************** 
+***  NAME        : Cole Masterson                                 *** 
+***  CLASS       : CSC 354                                        *** 
+***  ASSIGNMENT  : 4                                              *** 
+***  DUE DATE    : 11/30/2022                                      *** 
+***  INSTRUCTOR  : GAMRADT                                        *** 
+********************************************************************* 
+* This is where the PassTwo class is defined. This class contains 2
+structs, 6 object code records, 21 public methods, two constructors,
+and a destructor.
+*********************************************************************/
+
 #ifndef PASSTWO_H
 #define PASSTWO_H
 
@@ -5,12 +17,15 @@
 #include <bitset>
 using namespace std;
 
+
+//used to hold DR values to make it easier to print
 struct DefStruct
 {
     string name, 
         address;
 };
 
+//used to hold MR values to make it easier to print
 struct ModStruct
 {
     string address,
